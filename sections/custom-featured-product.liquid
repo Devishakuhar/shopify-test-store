@@ -1,0 +1,90 @@
+
+{{ 'custom-featured-product.css' | asset_url | stylesheet_tag }}
+<script src="{{ 'custom-featured-product.js' | asset_url }}" defer></script>
+
+<section
+  id="CustomFeaturedProduct-{{ section.id }}"
+  class="custom-featured-product"
+  data-section-id="{{ section.id }}"
+>
+  <div class="custom-featured-product__container">
+
+    {% if section.settings.heading != blank %}
+      <div class="custom-featured-product__header">
+        <h2 class="custom-featured-product__heading">
+          {{ section.settings.heading | escape }}
+        </h2>
+      </div>
+    {% endif %}
+
+    {% if section.settings.collection != blank
+      and section.settings.collection.products.size > 0
+    %}
+      <div class="custom-featured-product__grid">
+
+        {% for product in section.settings.collection.products
+          limit: section.settings.product_count
+        %}
+          {% render 'custom-product-card',
+            product: product,
+            section_id: section.id,
+            show_swatches: section.settings.show_swatches
+          %}
+        {% endfor %}
+
+      </div>
+    {% else %}
+      <div class="custom-featured-product__empty">
+        <p>
+          {% if section.settings.collection == blank %}
+            Please select a collection from the section settings.
+          {% else %}
+            No products found in this collection.
+          {% endif %}
+        </p>
+      </div>
+    {% endif %}
+
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Custom Featured Product",
+  "tag": "section",
+  "class": "section-custom-featured-product",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Section heading",
+      "default": "Featured Products"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Select collection"
+    },
+    {
+      "type": "range",
+      "id": "product_count",
+      "min": 4,
+      "max": 8,
+      "step": 1,
+      "default": 4,
+      "label": "Number of products"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_swatches",
+      "label": "Show color swatches",
+      "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "Custom Featured Product"
+    }
+  ]
+}
+{% endschema %}

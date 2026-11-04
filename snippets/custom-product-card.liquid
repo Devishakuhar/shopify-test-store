@@ -1,0 +1,178 @@
+
+{% assign selected_variant = product.selected_or_first_available_variant %}
+{% assign color_option_position = 0 %}
+
+{% for option in product.options_with_values %}
+  {% assign option_name = option.name | downcase %}
+  {% if option_name == 'color' or option_name == 'colour' %}
+    {% assign color_option_position = option.position %}
+  {% endif %}
+{% endfor %}
+
+<article
+  class="custom-product-card"
+  data-product-card
+  data-product-id="{{ product.id }}"
+  data-section-id="{{ section_id }}"
+>
+  <script type="application/json" data-product-json>
+    {{ product | json }}
+  </script>
+
+  <div class="custom-product-card__media">
+    <a
+      href="{{ product.url }}?variant={{ selected_variant.id }}"
+      class="custom-product-card__link"
+      data-product-link
+      aria-label="{{ product.title | escape }}"
+    >
+      {% if selected_variant.featured_image %}
+        {% assign card_image = selected_variant.featured_image %}
+      {% else %}
+        {% assign card_image = product.featured_image %}
+      {% endif %}
+
+      {% if card_image %}
+        <img
+          src="{{ card_image | image_url: width: 700 }}"
+          alt="{{ card_image.alt | default: product.title | escape }}"
+          width="{{ card_image.width }}"
+          height="{{ card_image.height }}"
+          loading="lazy"
+          data-product-image
+        >
+      {% else %}
+        {{ 'product-1' | placeholder_svg_tag: 'custom-product-card__placeholder' }}
+      {% endif %}
+    </a>
+
+    {% if selected_variant.compare_at_price > selected_variant.price %}
+      {% assign discount = selected_variant.compare_at_price
+        | minus: selected_variant.price
+        | times: 100.0
+        | divided_by: selected_variant.compare_at_price
+        | round
+      %}
+      <span class="custom-product-card__badge" data-discount-badge>
+        {{ discount }}% OFF
+      </span>
+    {% else %}
+      <span class="custom-product-card__badge" data-discount-badge hidden></span>
+    {% endif %}
+  </div>
+
+  <div class="custom-product-card__content">
+
+    <a
+      href="{{ product.url }}?variant={{ selected_variant.id }}"
+      class="custom-product-card__title"
+      data-product-link
+    >
+      {{ product.title | escape }}
+    </a>
+
+    <div class="custom-product-card__price" data-product-price>
+      <span class="custom-product-card__selling-price" data-selling-price>
+        {{ selected_variant.price | money }}
+      </span>
+
+      <s
+        class="custom-product-card__compare-price"
+        data-compare-price
+        {% unless selected_variant.compare_at_price > selected_variant.price %}
+          hidden
+        {% endunless %}
+      >
+        {{ selected_variant.compare_at_price | money }}
+      </s>
+    </div>
+
+    {% if show_swatches and color_option_position > 0 %}
+      {% for option in product.options_with_values %}
+        {% if option.position == color_option_position %}
+          <div
+            class="custom-product-card__swatches"
+            role="group"
+            aria-label="Choose color for {{ product.title | escape }}"
+          >
+           {% assign option_index = option.position | minus: 1 %}
+
+{% for value in option.values %}
+  <button
+    type="button"
+    class="custom-product-card__swatch"
+    data-option-position="{{ option.position }}"
+    data-option-value="{{ value | escape }}"
+    aria-label="Color: {{ value | escape }}"
+    aria-pressed="{% if selected_variant.options[option_index] == value %}true{% else %}false{% endif %}"
+    title="{{ value | escape }}"
+  >
+    <span>{{ value | escape }}</span>
+  </button>
+{% endfor %}
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+
+    {% for option in product.options_with_values %}
+      {% unless option.position == color_option_position and show_swatches %}
+        <div class="custom-product-card__option">
+          <label for="Option-{{ section_id }}-{{ product.id }}-{{ option.position }}">
+            {{ option.name | escape }}
+          </label>
+
+          <select
+            id="Option-{{ section_id }}-{{ product.id }}-{{ option.position }}"
+            data-option-position="{{ option.position }}"
+            data-product-option
+          >
+          {% assign option_index = option.position | minus: 1 %}
+
+{% for value in option.values %}
+  <option
+    value="{{ value | escape }}"
+    {% if selected_variant.options[option_index] == value %}
+      selected
+    {% endif %}
+  >
+    {{ value | escape }}
+  </option>
+{% endfor %}
+          </select>
+        </div>
+      {% endunless %}
+    {% endfor %}
+
+    <div class="custom-product-card__availability"
+      data-availability
+      aria-live="polite"
+    ></div>
+
+    <button
+      type="button"
+      class="custom-product-card__add-to-cart"
+      data-add-to-cart
+      data-variant-id="{{ selected_variant.id }}"
+      {% unless selected_variant.available %}
+        disabled
+      {% endunless %}
+    >
+      <span data-button-text>
+        {% if selected_variant.available %}
+          Add to Cart
+        {% else %}
+          Sold Out
+        {% endif %}
+      </span>
+    </button>
+
+    <p
+      class="custom-product-card__feedback"
+      data-cart-feedback
+      role="status"
+      aria-live="polite"
+    ></p>
+
+  </div>
+</article>
