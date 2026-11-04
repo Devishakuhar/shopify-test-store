@@ -87,33 +87,80 @@
       </s>
     </div>
 
-    {% if show_swatches and color_option_position > 0 %}
-      {% for option in product.options_with_values %}
-        {% if option.position == color_option_position %}
-          <div
-            class="custom-product-card__swatches"
-            role="group"
-            aria-label="Choose color for {{ product.title | escape }}"
-          >
-           {% assign option_index = option.position | minus: 1 %}
+ 
+{% for option in product.options_with_values %}
+  {% assign option_index = option.position | minus: 1 %}
+  {% assign option_name = option.name | downcase %}
+  {% assign is_color = false %}
 
-{% for value in option.values %}
-  <button
-    type="button"
-    class="custom-product-card__swatch"
-    data-option-position="{{ option.position }}"
-    data-option-value="{{ value | escape }}"
-    aria-label="Color: {{ value | escape }}"
-    aria-pressed="{% if selected_variant.options[option_index] == value %}true{% else %}false{% endif %}"
-    title="{{ value | escape }}"
+  {% if option_name == 'color' or option_name == 'colour' %}
+    {% assign is_color = true %}
+  {% endif %}
+
+  <div
+    class="custom-product-card__variant-group {% if is_color %}custom-product-card__color-group{% else %}custom-product-card__size-group{% endif %}"
+    data-option-group="{{ option.position }}"
   >
-    <span>{{ value | escape }}</span>
-  </button>
-{% endfor %}
-          </div>
+    {% unless is_color %}
+      <span class="custom-product-card__option-label">
+        {{ option.name | escape }}
+      </span>
+    {% endunless %}
+
+    <div
+      class="{% if is_color and show_swatches %}custom-product-card__swatches{% else %}custom-product-card__option-buttons{% endif %}"
+      role="group"
+      aria-label="Select {{ option.name | escape }}"
+    >
+      {% for value in option.values %}
+        {% assign value_name = value.name | default: value %}
+        {% assign swatch_color = value.swatch.color %}
+        {% assign swatch_image = value.swatch.image %}
+
+        {% assign is_selected = false %}
+        {% if selected_variant.options[option_index] == value_name %}
+          {% assign is_selected = true %}
+        {% endif %}
+
+        {% if is_color and show_swatches %}
+          <button
+            type="button"
+            class="custom-product-card__swatch"
+            data-option-position="{{ option.position }}"
+            data-option-value="{{ value_name | escape }}"
+            aria-label="{{ option.name }}: {{ value_name | escape }}"
+            aria-pressed="{{ is_selected }}"
+            title="{{ value_name | escape }}"
+            {% if swatch_color != blank %}
+              style="--swatch-color: {{ swatch_color }};"
+            {% elsif swatch_image != blank %}
+              style="--swatch-image: url('{{ swatch_image | image_url: width: 80 }}');"
+            {% endif %}
+          >
+            {% unless swatch_color != blank or swatch_image != blank %}
+              <span class="custom-product-card__swatch-fallback">
+                {{ value_name | escape }}
+              </span>
+            {% endunless %}
+          </button>
+
+        {% else %}
+          <button
+            type="button"
+            class="custom-product-card__option-button"
+            data-option-position="{{ option.position }}"
+            data-option-value="{{ value_name | escape }}"
+            aria-label="{{ option.name }}: {{ value_name | escape }}"
+            aria-pressed="{{ is_selected }}"
+          >
+            {{ value_name | escape }}
+          </button>
         {% endif %}
       {% endfor %}
-    {% endif %}
+    </div>
+  </div>
+{% endfor %}
+
 
     {% for option in product.options_with_values %}
       {% unless option.position == color_option_position and show_swatches %}

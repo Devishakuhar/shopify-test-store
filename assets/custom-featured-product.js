@@ -19,23 +19,19 @@
     return { data, initialVariant, options };
   };
 
-  const getSelectedOptions = (card, options) => {
-    return options.map((_, index) => {
-      const position = index + 1;
+ const getSelectedOptions = (card, options) => {
+  return options.map((_, index) => {
+    const position = index + 1;
 
-      const swatch = card.querySelector(
-        `[data-option-position="${position}"][data-option-value][aria-pressed="true"]`
-      );
+    const selectedButton = card.querySelector(
+      `[data-option-position="${position}"][data-option-value][aria-pressed="true"]`
+    );
 
-      const select = card.querySelector(
-        `select[data-option-position="${position}"]`
-      );
-
-      return swatch
-        ? swatch.dataset.optionValue
-        : select?.value;
-    });
-  };
+    return selectedButton
+      ? selectedButton.dataset.optionValue
+      : null;
+  });
+};
 
   const formatMoney = (amount, currency) => {
     return new Intl.NumberFormat(

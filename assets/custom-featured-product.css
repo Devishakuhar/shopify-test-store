@@ -492,3 +492,132 @@
   }
 }
 
+/* Variant option groups */
+.custom-product-card__variant-group {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.custom-product-card__option-label {
+  display: block;
+  margin-bottom: 9px;
+  color: #777;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* Circular color swatches */
+.custom-product-card__swatches {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin: 8px 0;
+}
+
+.custom-product-card__swatch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  padding: 0;
+  border: 1px solid #dedede;
+  border-radius: 50%;
+  background-color: var(--swatch-color, #fff);
+  background-image: var(--swatch-image, none);
+  background-size: cover;
+  background-position: center;
+  cursor: pointer;
+}
+
+.custom-product-card__swatch[aria-pressed="true"] {
+  border: 2px solid #111;
+  outline: 1px solid #111;
+  outline-offset: 2px;
+}
+
+.custom-product-card__swatch-fallback {
+  position: absolute;
+  left: 35px;
+  white-space: nowrap;
+  font-size: 11px;
+  color: #333;
+}
+
+/* Hide text fallback inside circular swatches.
+   Show it as a compact label only when native swatch data is absent. */
+.custom-product-card__swatch:has(.custom-product-card__swatch-fallback) {
+  width: auto;
+  min-width: 30px;
+  border-radius: 20px;
+  padding: 0 10px;
+}
+
+.custom-product-card__swatch:has(.custom-product-card__swatch-fallback) .custom-product-card__swatch-fallback {
+  position: static;
+}
+
+/* Size buttons */
+.custom-product-card__option-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.custom-product-card__option-button {
+  min-width: 34px;
+  min-height: 34px;
+  padding: 5px 10px;
+  border: 1px solid #e5e5e5;
+  border-radius: 5px;
+  background: #fff;
+  color: #222;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.custom-product-card__option-button[aria-pressed="true"] {
+  border-color: #222;
+  background: #222;
+  color: #fff;
+}
+
+.custom-product-card__swatch:focus-visible,
+.custom-product-card__option-button:focus-visible {
+  outline: 2px solid #222;
+  outline-offset: 3px;
+}
+
+/* Mobile */
+@media screen and (max-width: 749px) {
+  .custom-product-card__swatches {
+    gap: 8px;
+  }
+
+  .custom-product-card__swatch {
+    width: 27px;
+    height: 27px;
+    min-width: 27px;
+    min-height: 27px;
+  }
+
+  .custom-product-card__option-buttons {
+    gap: 5px;
+  }
+
+  .custom-product-card__option-button {
+    min-width: 30px;
+    min-height: 31px;
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+}
+
