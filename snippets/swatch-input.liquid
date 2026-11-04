@@ -1,0 +1,39 @@
+{% comment %}
+  Renders a swatch input component.
+  Accepts:
+  - id, name, value, product_form_id, checked, disabled, visually_disabled, shape, help_text, additional_props (as before)
+  - swatch: {SwatchDrop} native swatch drop (optional)
+  - variant_image_url: {String} optional image url from variant metafield
+  - variant_color: {Object} optional color object from variant metafield
+{% endcomment %}
+
+<input
+  type="{{ type | default: 'radio' }}"
+  id="{{ id }}"
+  name="{{ name }}"
+  value="{{ value }}"
+  form="{{ product_form_id }}"
+  class="swatch-input__input{% if visually_disabled %} visually-disabled{% endif %}"
+  {% if checked %}
+    checked
+  {% endif %}
+  {% if disabled %}
+    disabled
+  {% endif %}
+  {% if additional_props %}
+    {{ additional_props }}
+  {% endif %}
+>
+<label
+  for="{{ id }}"
+  title="{{ value }}"
+  class="swatch-input__label{% if shape == 'square' %} swatch-input__label--square{% endif %}"
+>
+  {% render 'swatch',
+    swatch: swatch,
+    shape: shape,
+    variant_image_url: variant_image_url,
+    variant_color: variant_color
+  %}
+  {{ help_text }}
+</label>
