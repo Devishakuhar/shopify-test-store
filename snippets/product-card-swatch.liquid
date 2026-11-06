@@ -1,0 +1,341 @@
+{%- liquid
+  assign color_pos = -1
+  assign other_pos = -1
+  unless product.has_only_default_variant
+    for option in product.options_with_values
+      assign opt_name = option.name | downcase
+      if opt_name == 'color' or opt_name == 'colour'
+        if color_pos < 0
+          assign color_pos = forloop.index0
+        endif
+      elsif other_pos < 0
+        assign other_pos = forloop.index0
+      endif
+    endfor
+  endunless
+
+  assign current = product.selected_or_first_available_variant
+  assign current_color = ''
+  assign current_size = ''
+  if color_pos >= 0
+    assign current_color = current.options[color_pos]
+  endif
+  if other_pos >= 0
+    assign current_size = current.options[other_pos]
+  endif
+
+  assign img = current.featured_image | default: product.featured_image
+  assign has_compare = false
+  assign pct = 0
+  if current.compare_at_price > current.price
+    assign has_compare = true
+    assign pct = current.compare_at_price | minus: current.price | times: 100.0 | divided_by: current.compare_at_price | round
+  endif
+
+  assign is_pro = false
+  for tag in product.tags
+    assign tag_down = tag | downcase
+    if tag_down == 'pro'
+      assign is_pro = true
+    endif
+  endfor
+  assign rating = product.metafields.reviews.rating.value
+  assign rating_count = product.metafields.reviews.rating_count.value
+  assign state = 'soldout'
+  if current.available
+    assign state = 'available'
+  endif
+
+  assign mf_ns = ''
+  assign mf_key = ''
+  if color_metafield != blank
+    assign mf_parts = color_metafield | split: '.'
+    if mf_parts.size == 2
+      assign mf_ns = mf_parts[0] | strip
+      assign mf_key = mf_parts[1] | strip
+    endif
+  endif
+
+  comment
+    Hover carousel: slide 1 is the variant's own image, the next slides are the following
+    gallery images (wrapping round), capped at max_slides. One list per variant is embedded as JSON.
+  endcomment
+  assign max_slides = 4
+  assign total_slides = product.images.size | at_most: max_slides
+  assign extra_count = total_slides | minus: 1
+  capture hover_json
+    echo '{'
+    for variant in product.variants
+      assign vimg = variant.featured_image | default: product.featured_image
+      echo variant.id | prepend: '"' | append: '":['
+      if vimg
+        for k in (1..extra_count)
+          assign ix = vimg.position | minus: 1 | plus: k | modulo: product.images.size
+          assign himg = product.images[ix]
+          assign h300 = himg | image_url: width: 300
+          assign h450 = himg | image_url: width: 450
+          assign h600 = himg | image_url: width: 600
+          assign h900 = himg | image_url: width: 900
+          assign hset = h300 | append: ' 300w, ' | append: h450 | append: ' 450w, ' | append: h600 | append: ' 600w, ' | append: h900 | append: ' 900w'
+          echo '{"src":'
+          echo h600 | json
+          echo ',"srcset":'
+          echo hset | json
+          echo '}'
+          unless forloop.last
+            echo ','
+          endunless
+        endfor
+      endif
+      echo ']'
+      unless forloop.last
+        echo ','
+      endunless
+    endfor
+    echo '}'
+  endcapture
+-%}
+
+<article
+  class="psc-card"
+  data-psc-card
+  data-product-id="{{ product.id }}"
+  data-color-index="{{ color_pos }}"
+  data-size-index="{{ other_pos }}"
+  data-color="{{ current_color | escape }}"
+  data-size="{{ current_size | escape }}"
+  data-state="{{ state }}"
+>
+  <div class="psc-card__media">
+    <a href="{{ current.url }}" class="psc-card__media-link" data-psc-link aria-label="{{ product.title | escape }}" tabindex="-1">
+      {%- if img -%}
+        {%- liquid
+          assign src_300 = img | image_url: width: 300
+          assign src_450 = img | image_url: width: 450
+          assign src_600 = img | image_url: width: 600
+          assign src_900 = img | image_url: width: 900
+        -%}
+        <img
+          class="psc-card__img"
+          data-psc-img
+          src="{{ src_600 }}"
+          srcset="{{ src_300 }} 300w, {{ src_450 }} 450w, {{ src_600 }} 600w, {{ src_900 }} 900w"
+          sizes="(min-width: 990px) 24vw, 48vw"
+          alt="{{ img.alt | default: product.title | escape }}"
+          width="{{ img.width }}"
+          height="{{ img.height }}"
+          loading="{% if lazy %}lazy{% else %}eager{% endif %}"
+        >
+        {%- comment -%} Extra carousel slides (shown on hover). Kept in sync with the selected colour by assets/product-card-swatch.js {%- endcomment -%}
+        {%- for k in (1..extra_count) -%}
+          {%- liquid
+            assign ix = img.position | minus: 1 | plus: k | modulo: product.images.size
+            assign himg = product.images[ix]
+            assign h300 = himg | image_url: width: 300
+            assign h450 = himg | image_url: width: 450
+            assign h600 = himg | image_url: width: 600
+            assign h900 = himg | image_url: width: 900
+          -%}
+          <img
+            class="psc-card__hover"
+            data-psc-hover-img
+            style="--i:{{ k }}"
+            src="{{ h600 }}"
+            srcset="{{ h300 }} 300w, {{ h450 }} 450w, {{ h600 }} 600w, {{ h900 }} 900w"
+            sizes="(min-width: 990px) 24vw, 48vw"
+            alt=""
+            aria-hidden="true"
+            width="{{ himg.width }}"
+            height="{{ himg.height }}"
+            loading="lazy"
+            decoding="async"
+          >
+        {%- endfor -%}
+      {%- else -%}
+        <span class="psc-card__placeholder">{{ 'product-1' | placeholder_svg_tag: 'psc-card__placeholder-svg' }}</span>
+      {%- endif -%}
+    </a>
+
+    {%- if is_pro -%}
+      <span class="psc-card__pro"><svg viewBox="0 0 20 20" width="9" height="9" aria-hidden="true"><path fill="currentColor" d="M10 1.5l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L1.4 7.8l6-.8z"/></svg>PRO</span>
+    {%- endif -%}
+
+    {%- if total_slides > 1 -%}
+      <span class="psc-card__dots" aria-hidden="true">
+        {%- for k in (1..total_slides) -%}<i{% if forloop.first %} class="is-active"{% endif %}></i>{%- endfor -%}
+      </span>
+    {%- endif -%}
+
+    {%- if rating != blank -%}
+      <span class="psc-card__rating">
+        <svg viewBox="0 0 20 20" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="M10 1.5l2.6 5.5 6 .8-4.4 4.2 1.1 6-5.3-2.9-5.3 2.9 1.1-6L1.4 7.8l6-.8z"/></svg>
+        <strong>{{ rating | round: 1 }}</strong>
+        {%- if rating_count != blank %}<span class="psc-card__rating-count">({{ rating_count }}+)</span>{% endif -%}
+        <span class="psc-sr-only">out of 5 stars</span>
+      </span>
+    {%- endif -%}
+  </div>
+
+  <div class="psc-card__body">
+    <div class="psc-card__tags">
+      {%- if show_tags -%}
+        {%- assign chip_count = 0 -%}
+        {%- for tag in product.tags -%}
+          {%- assign tag_down = tag | downcase -%}
+          {%- if tag_down == 'pro' -%}{%- continue -%}{%- endif -%}
+          {%- if chip_count >= 2 -%}{%- break -%}{%- endif -%}
+          <span class="psc-chip">{{ tag | escape }}</span>
+          {%- assign chip_count = chip_count | plus: 1 -%}
+        {%- endfor -%}
+      {%- endif -%}
+    </div>
+
+    <h3 class="psc-card__title">
+      <a href="{{ current.url }}" data-psc-link>{{ product.title | escape }}</a>
+    </h3>
+
+    {%- comment -%} Selectors live OUTSIDE the links so clicking them never navigates. {%- endcomment -%}
+    <div class="psc-card__options">
+      {%- if color_pos >= 0 and show_swatches -%}
+        {%- assign color_option = product.options_with_values[color_pos] -%}
+        <div class="psc-swatches" role="radiogroup" aria-label="{{ color_option.name | escape }}" data-psc-group="color">
+          {%- for value in color_option.values -%}
+            {%- liquid
+              assign swatch_style = ''
+              if value.swatch.image
+                assign swatch_img = value.swatch.image | image_url: width: 80
+                assign swatch_style = '--psc-swatch-image:url(' | append: swatch_img | append: ')'
+              elsif value.swatch.color
+                assign swatch_style = '--psc-swatch-color:rgb(' | append: value.swatch.color.rgb | append: ')'
+              endif
+              if swatch_style == blank and mf_ns != blank
+                for mf_variant in product.variants
+                  if mf_variant.options[color_pos] == value.name
+                    assign mf_val = mf_variant.metafields[mf_ns][mf_key].value
+                    if mf_val != blank
+                      assign mf_hex = mf_val | color_to_hex
+                      if mf_hex contains '#'
+                        assign swatch_style = '--psc-swatch-color:' | append: mf_hex
+                      endif
+                    endif
+                    break
+                  endif
+                endfor
+              endif
+              assign is_sel = false
+              if value.name == current_color
+                assign is_sel = true
+              endif
+            -%}
+            <button
+              type="button"
+              role="radio"
+              class="psc-swatch{% if swatch_style == blank %} psc-swatch--text{% endif %}"
+              data-psc-option="color"
+              data-value="{{ value.name | escape }}"
+              data-label="{{ value.name | escape }}"
+              aria-label="{{ value.name | escape }}"
+              {% if swatch_style != blank %}title="{{ value.name | escape }}"{% endif %}
+              aria-checked="{{ is_sel }}"
+              tabindex="{% if is_sel %}0{% else %}-1{% endif %}"
+              {% if swatch_style != blank %}style="{{ swatch_style }}"{% endif %}
+            >
+              {%- if swatch_style == blank -%}
+                <span class="psc-swatch__text">{{ value.name | escape }}</span>
+              {%- else -%}
+                <span class="psc-swatch__check" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M3 8.5l3.2 3L13 4.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              {%- endif -%}
+            </button>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+
+      {%- if other_pos >= 0 -%}
+        {%- assign other_option = product.options_with_values[other_pos] -%}
+        {%- if other_option.values.size > 1 -%}
+          <div class="psc-sizes-wrap" data-psc-sizes-wrap>
+          <div class="psc-sizes" role="radiogroup" aria-label="{{ other_option.name | escape }}" data-psc-group="size">
+            {%- for value in other_option.values -%}
+              {%- assign is_sel = false -%}
+              {%- if value.name == current_size -%}{%- assign is_sel = true -%}{%- endif -%}
+              <button
+                type="button"
+                role="radio"
+                class="psc-size"
+                data-psc-option="size"
+                data-value="{{ value.name | escape }}"
+                data-label="{{ value.name | escape }}"
+                aria-label="{{ value.name | escape }}"
+                aria-checked="{{ is_sel }}"
+                tabindex="{% if is_sel %}0{% else %}-1{% endif %}"
+              >{{ value.name | escape }}</button>
+            {%- endfor -%}
+          </div>
+          <button type="button" class="psc-sizes__next" data-psc-sizes-next aria-label="Show more sizes" hidden>
+            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          </div>
+        {%- endif -%}
+      {%- endif -%}
+    </div>
+
+    <div class="psc-card__discount{% unless has_compare %} is-empty{% endunless %}" data-psc-discount-row>
+      <span class="psc-badge" data-psc-discount>{{ pct }}% OFF</span>
+    </div>
+
+    <div class="psc-card__price">
+      <div class="psc-card__price-main" data-psc-price>
+        <div class="psc-card__mrp{% unless has_compare %} is-empty{% endunless %}" data-psc-mrp-wrap>
+          <span class="psc-label">MRP</span>
+          <s data-psc-mrp>{{ current.compare_at_price | money_without_trailing_zeros }}</s>
+        </div>
+        <div class="psc-card__sale">
+          <span class="psc-label psc-label--sale">Sale Price</span>
+          <strong data-psc-sale>{{ current.price | money_without_trailing_zeros }}</strong>
+        </div>
+      </div>
+      <p class="psc-card__na" data-psc-na hidden>Unavailable</p>
+    </div>
+
+    <p class="psc-card__error" role="alert" data-psc-error hidden></p>
+
+    <button type="button" class="psc-btn" data-psc-add {% unless current.available %}disabled{% endunless %}>
+      <span class="psc-btn__spinner" aria-hidden="true"></span>
+      <span class="psc-btn__label" data-psc-label>{% if current.available %}Add to cart{% else %}Sold out{% endif %}</span>
+    </button>
+
+    <p class="psc-sr-only" aria-live="polite" data-psc-live></p>
+  </div>
+
+  <script type="application/json" data-psc-hover-map>{{ hover_json }}</script>
+
+  <script type="application/json" data-psc-variants>
+    [
+      {%- for variant in product.variants -%}
+        {%- assign vimg = variant.featured_image | default: product.featured_image -%}
+        {%- liquid
+          if vimg
+            assign v300 = vimg | image_url: width: 300
+            assign v450 = vimg | image_url: width: 450
+            assign v600 = vimg | image_url: width: 600
+            assign v900 = vimg | image_url: width: 900
+            assign vset = v300 | append: ' 300w, ' | append: v450 | append: ' 450w, ' | append: v600 | append: ' 600w, ' | append: v900 | append: ' 900w'
+          endif
+        -%}
+        {
+          "id": {{ variant.id }},
+          "options": {{ variant.options | json }},
+          "available": {{ variant.available | json }},
+          "price": {{ variant.price }},
+          "compare": {{ variant.compare_at_price | default: 0 }},
+          "priceFormatted": {{ variant.price | money_without_trailing_zeros | json }},
+          "compareFormatted": {{ variant.compare_at_price | money_without_trailing_zeros | json }},
+          "url": {{ variant.url | json }},
+          "image": {% if vimg -%}
+            { "src": {{ v600 | json }}, "srcset": {{ vset | json }}, "alt": {{ vimg.alt | default: product.title | json }} }
+          {%- else -%}null{%- endif %}
+        }{% unless forloop.last %},{% endunless %}
+      {%- endfor -%}
+    ]
+  </script>
+</article>
