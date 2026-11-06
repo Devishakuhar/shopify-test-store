@@ -154,14 +154,16 @@
         "padding_bottom": 16
       }
     },
-    "custom_featured_product_KCqYzx": {
-      "type": "custom-featured-product",
-      "name": "Custom Featured Product",
+    "featured_product_swatches_KNxWhq": {
+      "type": "featured-product-swatches",
+      "name": "custom-featured-product",
       "settings": {
         "heading": "Featured Products",
         "collection": "adidas",
-        "product_count": 4,
-        "show_swatches": true
+        "products_count": 4,
+        "show_swatches": true,
+        "color_metafield": "custom.color",
+        "show_tags": true
       }
     }
   },
@@ -169,6 +171,6 @@
     "image_banner",
     "featured_collection",
     "featured_product_7E4kjG",
-    "custom_featured_product_KCqYzx"
+    "featured_product_swatches_KNxWhq"
   ]
 }
